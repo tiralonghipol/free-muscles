@@ -28,7 +28,7 @@ const COLORS = {
   hover: '#e8836f',
   selected: '#ffb347',
   // A single muscle picked inside its group: contrasting cyan, with the rest of the group dimmed.
-  focus: '#2ec8ff',
+  focus: '#45b8e0',
   groupDimmed: '#b9783f',
   primary: '#ff8a2a',
   secondary: '#f3e3a6',
@@ -46,7 +46,7 @@ const MATERIALS = Object.fromEntries(
       color,
       roughness: k === 'bone' ? 0.75 : 0.55,
       // Slight glow so the focused muscle still reads when it sits in shadow.
-      ...(k === 'focus' && { emissive: color, emissiveIntensity: 0.25 }),
+      ...(k === 'focus' && { emissive: color, emissiveIntensity: 0.1 }),
     }),
   ]),
 ) as Record<Look, THREE.MeshStandardMaterial>;
@@ -64,7 +64,7 @@ const GHOSTS = Object.fromEntries(
 const XRAY_OVERLAY = new THREE.MeshBasicMaterial({
   color: COLORS.focus,
   transparent: true,
-  opacity: 0.6,
+  opacity: 0.4,
   depthTest: false,
   depthWrite: false,
 });
