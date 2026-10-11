@@ -5,6 +5,12 @@ It runs on phones, tablets and desktop.
 
 **Live:** https://tiralonghipol.github.io/free-muscles/
 
+<p align="center">
+  <a href="https://tiralonghipol.github.io/free-muscles/">
+    <img src="docs/demo.gif" width="800" alt="Demo: clicking the chest on the 3D body opens chest exercises; picking Lats turns the camera to the back; a single deltoid head is highlighted in cyan; clicking the thigh opens quadriceps exercises." />
+  </a>
+</p>
+
 ## Run it
 
 ```bash
