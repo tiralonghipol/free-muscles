@@ -3,6 +3,8 @@
 A 3D muscle map you can explore in the browser: tap a muscle to see every exercise that trains it.
 It runs on phones, tablets and desktop.
 
+**Live:** https://tiralonghipol.github.io/free-muscles/
+
 ## Run it
 
 ```bash
@@ -10,6 +12,12 @@ npm install
 npm run dev        # http://localhost:5173 (also reachable from your phone on the same Wi-Fi)
 npm run build      # static site in dist/ — deploy to Vercel, Netlify, Cloudflare Pages, GitHub Pages…
 ```
+
+## Deploy
+
+Every push and pull request is built by [.github/workflows/deploy.yml](.github/workflows/deploy.yml); pushes to `main`
+are published to GitHub Pages. One-time setup: repo **Settings → Pages → Source: GitHub Actions**.
+Vite uses relative paths (`base: './'`), so the same build works on the github.io sub-path or a custom domain.
 
 ## How it works
 
