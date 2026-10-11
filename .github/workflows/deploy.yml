@@ -1,5 +1,6 @@
 # Builds (typecheck + Vite) on every push and pull request; deploys to GitHub Pages from main only.
-# One-time setup: repo Settings → Pages → Source: "GitHub Actions".
+# One-time setup: repo Settings → Pages → Source: "GitHub Actions" (not "Deploy from a branch",
+# which would publish the raw sources and override this build).
 name: Build & deploy
 
 on:
@@ -14,9 +15,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -24,7 +25,7 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
           path: dist
@@ -45,4 +46,4 @@ jobs:
       cancel-in-progress: false
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
