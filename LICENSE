@@ -1,0 +1,41 @@
+MIT License
+
+Copyright (c) 2026 tiralonghipol
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-------------------------------------------------------------------------------
+Third-party content (not covered by the MIT license above)
+
+public/anatomy.glb
+  Derived from Z-Anatomy (https://www.z-anatomy.com/,
+  https://github.com/LluisV/Z-Anatomy-Sample), itself based on BodyParts3D
+  (© The Database Center for Life Science). Licensed under Creative Commons
+  Attribution-ShareAlike 4.0 (https://creativecommons.org/licenses/by-sa/4.0/).
+  Modified: muscles and bones extracted, connective tissue removed, decimated,
+  group metadata added, Draco-compressed. Any redistributed or modified version
+  of this file must remain CC BY-SA 4.0 and credit Z-Anatomy.
+
+public/exercises.json and exercise images
+  From free-exercise-db (https://github.com/yuhonas/free-exercise-db),
+  released into the public domain (Unlicense).
+
+public/draco/
+  Draco decoder from three.js (https://github.com/mrdoob/three.js),
+  Apache License 2.0 (Draco, © Google) / MIT (three.js).

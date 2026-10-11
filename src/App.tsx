@@ -1,0 +1,125 @@
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { CameraControls, ContactShadows, Loader } from '@react-three/drei';
+import { Body, type Highlight } from './components/Body';
+import { MuscleTree } from './components/MuscleTree';
+import { HOME } from './components/useCameraFocus';
+import { ExercisePanel } from './components/ExercisePanel';
+import { loadExercises, type Exercise } from './data/exercises';
+import { MUSCLE_GROUPS } from './data/muscles';
+import type { MuscleTarget, TreeGroup } from './data/anatomy';
+
+const TARGET_Y = HOME.targetY;
+type Vec3 = [number, number, number];
+const VIEWS: Record<'front' | 'back', Vec3> = {
+  front: [0, TARGET_Y, HOME.distance],
+  back: [0, TARGET_Y, -HOME.distance],
+};
+
+export default function App() {
+  const [selected, setSelected] = useState<MuscleTarget | null>(null);
+  const [hovered, setHovered] = useState<Required<MuscleTarget> | null>(null);
+  const [treeHover, setTreeHover] = useState<MuscleTarget | null>(null);
+  const [tree, setTree] = useState<TreeGroup[] | null>(null);
+  const [treeOpen, setTreeOpen] = useState(false);
+  const [openExercise, setOpenExercise] = useState<Exercise | null>(null);
+  const [exercises, setExercises] = useState<Exercise[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const controls = useRef<CameraControls | null>(null);
+
+  useEffect(() => {
+    loadExercises().then(setExercises, (e: Error) => setError(e.message));
+  }, []);
+
+  // Stable callback ref so the initial view is applied once, not on every render.
+  const initControls = useCallback((c: CameraControls | null) => {
+    if (c && !controls.current) c.setLookAt(...VIEWS.front, 0, TARGET_Y, 0, false);
+    controls.current = c;
+  }, []);
+
+  // When an exercise is open, light up every muscle it works.
+  const highlight = useMemo<Highlight>(() => {
+    if (!openExercise) return {};
+    const h: Highlight = {};
+    for (const m of openExercise.secondaryMuscles) h[m] = 'secondary';
+    for (const m of openExercise.primaryMuscles) h[m] = 'primary';
+    return h;
+  }, [openExercise]);
+
+  const selectMuscle = (target: MuscleTarget | null) => {
+    setSelected(target);
+    setOpenExercise(null);
+    setTreeOpen(false);
+  };
+
+  const goTo = (view: keyof typeof VIEWS) => {
+    const [x, y, z] = VIEWS[view];
+    controls.current?.setLookAt(x, y, z, 0, TARGET_Y, 0, true);
+  };
+
+  return (
+    <div className={selected ? 'app has-selection' : 'app'}>
+      <MuscleTree
+        tree={tree}
+        selected={selected}
+        open={treeOpen}
+        onSelect={selectMuscle}
+        onHover={setTreeHover}
+        onClose={() => setTreeOpen(false)}
+      />
+      <div className="viewport">
+        <Canvas camera={{ position: VIEWS.front, fov: 35 }} dpr={[1, 2]}>
+          <color attach="background" args={['#14161c']} />
+          <ambientLight intensity={0.4} />
+          <directionalLight position={[2, 4, 3]} intensity={1.4} />
+          <directionalLight position={[-2, 2, -3]} intensity={0.6} />
+          <hemisphereLight args={['#ffffff', '#30343f', 0.6]} />
+          <Suspense fallback={null}>
+            <Body
+              selected={selected}
+              highlight={highlight}
+              externalHover={treeHover}
+              onSelect={selectMuscle}
+              onHover={setHovered}
+              onTree={setTree}
+            />
+          </Suspense>
+          <ContactShadows position={[0, 0, 0]} opacity={0.5} scale={3} blur={2.5} />
+          <CameraControls
+            ref={initControls}
+            makeDefault
+            minDistance={0.4}
+            maxDistance={5}
+            minPolarAngle={0.2}
+            maxPolarAngle={Math.PI / 2 + 0.2}
+          />
+        </Canvas>
+
+        <div className="view-buttons">
+          <button className="tree-open" onClick={() => setTreeOpen(true)}>☰ Muscles</button>
+          <button onClick={() => goTo('front')}>Front</button>
+          <button onClick={() => goTo('back')}>Back</button>
+        </div>
+        {hovered && (
+          <div className="hover-label">
+            <strong>{MUSCLE_GROUPS[hovered.group].name}</strong> · {hovered.label}
+          </div>
+        )}
+        <Loader />
+        <a className="credit" href="https://www.z-anatomy.com/" target="_blank" rel="noreferrer">
+          3D model: Z-Anatomy, CC BY-SA 4.0
+        </a>
+      </div>
+
+      <ExercisePanel
+        muscle={selected?.group ?? null}
+        muscleLabel={selected?.label ?? null}
+        exercises={exercises}
+        error={error}
+        openExercise={openExercise}
+        onSelectMuscle={(id) => selectMuscle(id && { group: id })}
+        onOpenExercise={setOpenExercise}
+      />
+    </div>
+  );
+}

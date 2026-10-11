@@ -1,0 +1,25 @@
+# Dependencies & build output
+node_modules
+dist
+*.tsbuildinfo
+
+# Local env files (may hold secrets)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+
+# Z-Anatomy source files for scripts/build-anatomy.py (large; the built public/anatomy.glb is committed)
+*.fbx
+*.blend
+*.blend1
