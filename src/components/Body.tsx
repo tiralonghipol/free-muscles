@@ -4,6 +4,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import type { MuscleGroupId } from '../data/muscles';
 import { useCameraFocus } from './useCameraFocus';
+import { useXray } from './useXray';
 import { buildMuscleTree, meshInfo, type MuscleTarget, type TreeGroup } from '../data/anatomy';
 
 export type Highlight = Partial<Record<MuscleGroupId, 'primary' | 'secondary'>>;
@@ -50,6 +51,14 @@ const MATERIALS = Object.fromEntries(
   ]),
 ) as Record<Look, THREE.MeshStandardMaterial>;
 
+// See-through twins of each look, for meshes covering a buried selection (see useXray).
+const GHOSTS = Object.fromEntries(
+  Object.entries(MATERIALS).map(([k, m]) => [
+    k,
+    Object.assign(m.clone(), { transparent: true, opacity: 0.18, depthWrite: false }),
+  ]),
+) as Record<Look, THREE.MeshStandardMaterial>;
+
 // Pointer travel (px) above which a click is treated as the end of a drag.
 const CLICK_SLOP = 6;
 
@@ -77,6 +86,16 @@ export function Body({ selected, highlight, externalHover, onSelect, onHover, on
   useEffect(() => onTree(buildMuscleTree(scene)), [scene, onTree]);
   useCameraFocus(scene, meshes, selected);
 
+  // X-ray only for a single picked muscle (both sides): a whole group usually has big visible
+  // members, and ghosting everything around its deep ones (e.g. the chest for the rotator cuff)
+  // hides more than it shows.
+  const focusLabel = selected?.label;
+  const selectedMeshes = useMemo(
+    () => (focusLabel ? meshes.filter((m) => meshInfo(m).label === focusLabel) : []),
+    [meshes, focusLabel],
+  );
+  const ghosts = useXray(scene, meshes, selectedMeshes);
+
   useEffect(() => {
     const lookFor = (group: MuscleGroupId, label: string): Look => {
       if (selected?.group === group) {
@@ -89,9 +108,14 @@ export function Body({ selected, highlight, externalHover, onSelect, onHover, on
     };
     for (const m of meshes) {
       const { kind, group, label } = meshInfo(m);
-      m.material = MATERIALS[group ? lookFor(group, label) : kind === 'bone' ? 'bone' : 'other'];
+      const look = group ? lookFor(group, label) : kind === 'bone' ? 'bone' : 'other';
+      m.material = (ghosts.has(m) ? GHOSTS : MATERIALS)[look];
     }
-  }, [meshes, selected, highlight, hovered, externalHover]);
+  }, [meshes, selected, highlight, hovered, externalHover, ghosts]);
+
+  // Pointer events pass through ghosted meshes to what's visible behind them.
+  const hitOf = (e: ThreeEvent<PointerEvent | MouseEvent>) =>
+    e.intersections.find((i) => !ghosts.has(i.object as THREE.Mesh))?.object ?? null;
 
   const setHover = (mesh: THREE.Object3D | null) => {
     if (mesh === hoveredMesh.current) return;
@@ -107,12 +131,14 @@ export function Body({ selected, highlight, externalHover, onSelect, onHover, on
       object={scene}
       onPointerMove={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
-        setHover(targetOf(e.object) ? e.object : null);
+        const hit = hitOf(e);
+        setHover(hit && targetOf(hit) ? hit : null);
       }}
       onPointerOut={() => setHover(null)}
       onClick={(e: ThreeEvent<MouseEvent>) => {
         e.stopPropagation();
-        const target = targetOf(e.object);
+        const hit = hitOf(e);
+        const target = hit && targetOf(hit);
         if (target && e.delta <= CLICK_SLOP) onSelect(target);
       }}
     />
