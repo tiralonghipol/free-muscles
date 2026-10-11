@@ -63,6 +63,13 @@ function findOccluders(gl: THREE.WebGLRenderer, root: THREE.Object3D, mainCamera
   const pixels = new Uint8Array(PASS_SIZE * PASS_SIZE * 4);
 
   const saved = meshes.map((m) => [m.material, m.visible] as const);
+  // Anything else under root (e.g. the x-ray overlay from the previous check) must not draw into these passes.
+  const members = new Set<THREE.Object3D>(meshes);
+  const extras: THREE.Object3D[] = [];
+  root.traverse((o) => {
+    if (o instanceof THREE.Mesh && !members.has(o) && o.visible) extras.push(o);
+  });
+  extras.forEach((o) => { o.visible = false; });
   const prevTarget = gl.getRenderTarget();
   const prevClear = gl.getClearColor(new THREE.Color());
   const prevAlpha = gl.getClearAlpha();
@@ -99,6 +106,7 @@ function findOccluders(gl: THREE.WebGLRenderer, root: THREE.Object3D, mainCamera
     }
   } finally {
     meshes.forEach((m, i) => { m.material = saved[i][0]; m.visible = saved[i][1]; });
+    extras.forEach((o) => { o.visible = true; });
     gl.setRenderTarget(prevTarget);
     gl.setClearColor(prevClear, prevAlpha);
   }

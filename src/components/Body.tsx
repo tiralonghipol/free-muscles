@@ -55,9 +55,19 @@ const MATERIALS = Object.fromEntries(
 const GHOSTS = Object.fromEntries(
   Object.entries(MATERIALS).map(([k, m]) => [
     k,
-    Object.assign(m.clone(), { transparent: true, opacity: 0.18, depthWrite: false }),
+    Object.assign(m.clone(), { transparent: true, opacity: 0.65, depthWrite: false }),
   ]),
 ) as Record<Look, THREE.MeshStandardMaterial>;
+
+// Drawn over everything for a buried selection, so it stays visible through any number of
+// ghosted layers while those stay opaque enough to read and click.
+const XRAY_OVERLAY = new THREE.MeshBasicMaterial({
+  color: COLORS.focus,
+  transparent: true,
+  opacity: 0.6,
+  depthTest: false,
+  depthWrite: false,
+});
 
 // Pointer travel (px) above which a click is treated as the end of a drag.
 const CLICK_SLOP = 6;
@@ -96,6 +106,24 @@ export function Body({ selected, highlight, externalHover, onSelect, onHover, on
   );
   const ghosts = useXray(scene, meshes, selectedMeshes);
 
+  // Overlay copies of the selected meshes (geometry shared), only while something covers them.
+  useEffect(() => {
+    if (ghosts.size === 0) return;
+    const overlay = new THREE.Group();
+    for (const m of selectedMeshes) {
+      const copy = new THREE.Mesh(m.geometry, XRAY_OVERLAY);
+      copy.matrixAutoUpdate = false;
+      copy.matrix.copy(m.matrixWorld);
+      copy.renderOrder = 10; // after the ghosted (transparent) meshes
+      copy.raycast = () => {};
+      overlay.add(copy);
+    }
+    scene.add(overlay);
+    return () => {
+      scene.remove(overlay);
+    };
+  }, [scene, selectedMeshes, ghosts]);
+
   useEffect(() => {
     const lookFor = (group: MuscleGroupId, label: string): Look => {
       if (selected?.group === group) {
@@ -113,9 +141,14 @@ export function Body({ selected, highlight, externalHover, onSelect, onHover, on
     }
   }, [meshes, selected, highlight, hovered, externalHover, ghosts]);
 
-  // Pointer events pass through ghosted meshes to what's visible behind them.
-  const hitOf = (e: ThreeEvent<PointerEvent | MouseEvent>) =>
-    e.intersections.find((i) => !ghosts.has(i.object as THREE.Mesh))?.object ?? null;
+  // A ghosted mesh lets the pointer through only where the selected muscle shows behind it;
+  // elsewhere it stays clickable, so neighbours of the selection can still be picked.
+  const hitOf = (e: ThreeEvent<PointerEvent | MouseEvent>) => {
+    const first = e.intersections[0]?.object ?? null;
+    if (!first || !ghosts.has(first as THREE.Mesh)) return first;
+    const behind = e.intersections.find((i) => !ghosts.has(i.object as THREE.Mesh))?.object;
+    return behind && selectedMeshes.includes(behind as THREE.Mesh) ? behind : first;
+  };
 
   const setHover = (mesh: THREE.Object3D | null) => {
     if (mesh === hoveredMesh.current) return;
