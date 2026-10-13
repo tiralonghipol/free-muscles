@@ -15,12 +15,22 @@ interface Props {
 
 type Role = 'primary' | 'secondary';
 const LEVELS = ['beginner', 'intermediate', 'expert'] as const;
+// Type filter values: 'training' (default) is everything except stretches; '' is all types.
+const TRAINING = 'training';
+const STRETCHING = 'stretching';
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExercise, onSelectMuscle, onOpenExercise }: Props) {
   const [role, setRole] = useState<Role>('primary');
   const [query, setQuery] = useState('');
   const [equipment, setEquipment] = useState('');
   const [level, setLevel] = useState('');
+  const [type, setType] = useState(TRAINING);
+
+  const typeOptions = useMemo(
+    () => [...new Set((exercises ?? []).map((e) => e.category).filter((c): c is string => !!c))].sort(),
+    [exercises],
+  );
 
   const equipmentOptions = useMemo(
     () => [...new Set((exercises ?? []).map((e) => e.equipment ?? 'other'))].sort(),
@@ -42,9 +52,16 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
     return byRole[role].filter((e) =>
       (!q || e.name.toLowerCase().includes(q)) &&
       (!equipment || (e.equipment ?? 'other') === equipment) &&
-      (!level || e.level === level),
+      (!level || e.level === level) &&
+      (type === TRAINING ? e.category !== STRETCHING : !type || e.category === type),
     );
-  }, [byRole, role, query, equipment, level]);
+  }, [byRole, role, query, equipment, level, type]);
+
+  // Stretches the default type filter is hiding here, to offer them back.
+  const hiddenStretches = useMemo(
+    () => (type === TRAINING ? byRole[role].filter((e) => e.category === STRETCHING).length : 0),
+    [byRole, role, type],
+  );
 
   if (!muscle) {
     return (
@@ -92,6 +109,11 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
           <option value="">Any level</option>
           {LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
         </select>
+        <select value={type} onChange={(e) => setType(e.target.value)} aria-label="Type">
+          <option value={TRAINING}>No stretches</option>
+          <option value="">All types</option>
+          {typeOptions.map((t) => <option key={t} value={t}>{capitalize(t)}</option>)}
+        </select>
       </div>
 
       {error && <p className="error">{error}</p>}
@@ -107,6 +129,7 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
                 <span className="exercise-name">{e.name}</span>
                 <span className="tags">
                   <span className="tag">{e.equipment ?? 'other'}</span>
+                  {e.category && e.category !== 'strength' && <span className="tag">{e.category}</span>}
                   {e.level && <span className={`tag level-${e.level}`}>{e.level}</span>}
                 </span>
               </button>
@@ -115,6 +138,12 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
           );
         })}
       </ul>
+      {hiddenStretches > 0 && (
+        <p className="muted hidden-note">
+          {hiddenStretches} {hiddenStretches === 1 ? 'stretch' : 'stretches'} hidden ·{' '}
+          <button className="link-btn" onClick={() => setType('')}>Show all types</button>
+        </p>
+      )}
     </aside>
   );
 }
