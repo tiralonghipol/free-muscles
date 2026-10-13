@@ -37,6 +37,9 @@ Vite uses relative paths (`base: './'`), so the same build works on the github.i
   The muscle → group map lives in `GROUP_RULES` in `scripts/build-anatomy.py`. Face, scalp, foot and rib-wall muscles are shown but not clickable.
 - **Exercise search:** with nothing selected, the panel searches every exercise by name (`searchExercises` in
   `src/data/exercises.ts`; "pull-up" also finds "Pullups"). Opening a result lights up its muscles.
+- **X-ray for deep muscles:** when a single muscle is picked, whatever covers it from the current camera angle turns
+  see-through (`src/components/useXray.ts`, re-checked whenever the camera settles). Clicks pass through the ghosted
+  meshes.
 - **Reverse lookup:** opening an exercise highlights every muscle it works on the model (orange = main target, pale yellow = also works).
 
 ## Rebuild the 3D model
@@ -60,7 +63,7 @@ Exercise data is public domain. See [LICENSE](LICENSE) for the full third-party 
 
 ## Next steps
 
-1. Layer peeling for deep muscles (rotator cuff, psoas, transversus). Every muscle is already its own mesh.
+1. Manual layer control (e.g. a "superficial / deep" slider) on top of the automatic x-ray.
 2. Finer muscle divisions (for example front, side and rear delts) with a sub-mapping onto the DB groups.
 3. Make it installable as a PWA (`vite-plugin-pwa`) and work offline.
 4. Saved workouts and favourites.
