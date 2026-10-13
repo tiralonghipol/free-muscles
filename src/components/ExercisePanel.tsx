@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { Exercise } from '../data/exercises';
+import { searchExercises, type Exercise } from '../data/exercises';
 import { ExerciseMedia } from './ExerciseMedia';
 import { MUSCLE_GROUPS, type MuscleGroupId } from '../data/muscles';
 
@@ -65,16 +65,13 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
 
   if (!muscle) {
     return (
-      <aside className="panel">
-        <h1>Free Muscle</h1>
-        <p className="muted">Tap a muscle on the body to see exercises that train it. Drag to rotate, pinch or scroll to zoom.</p>
-        <h2>Or pick a muscle group</h2>
-        <div className="chips">
-          {Object.values(MUSCLE_GROUPS).map((g) => (
-            <button key={g.id} className="chip" onClick={() => onSelectMuscle(g.id)}>{g.name}</button>
-          ))}
-        </div>
-      </aside>
+      <HomePanel
+        exercises={exercises}
+        error={error}
+        openExercise={openExercise}
+        onSelectMuscle={onSelectMuscle}
+        onOpenExercise={onOpenExercise}
+      />
     );
   }
 
@@ -120,24 +117,7 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
       {!exercises && !error && <p className="muted">Loading exercises…</p>}
       {exercises && visible.length === 0 && <p className="muted">No exercises match these filters.</p>}
 
-      <ul className="exercise-list">
-        {visible.map((e) => {
-          const open = openExercise?.id === e.id;
-          return (
-            <li key={e.id} className={open ? 'exercise open' : 'exercise'}>
-              <button className="exercise-row" onClick={() => onOpenExercise(open ? null : e)} aria-expanded={open}>
-                <span className="exercise-name">{e.name}</span>
-                <span className="tags">
-                  <span className="tag">{e.equipment ?? 'other'}</span>
-                  {e.category && e.category !== 'strength' && <span className="tag">{e.category}</span>}
-                  {e.level && <span className={`tag level-${e.level}`}>{e.level}</span>}
-                </span>
-              </button>
-              {open && <ExerciseDetail exercise={e} onSelectMuscle={onSelectMuscle} />}
-            </li>
-          );
-        })}
-      </ul>
+      <ExerciseList exercises={visible} openExercise={openExercise} onOpenExercise={onOpenExercise} onSelectMuscle={onSelectMuscle} />
       {hiddenStretches > 0 && (
         <p className="muted hidden-note">
           {hiddenStretches} {hiddenStretches === 1 ? 'stretch' : 'stretches'} hidden ·{' '}
@@ -145,6 +125,103 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
         </p>
       )}
     </aside>
+  );
+}
+
+// Shown with nothing selected: search every exercise by name.
+const EXAMPLE_SEARCHES = ['Squat', 'Bench press', 'Deadlift', 'Pull-up', 'Push-up', 'Lunge', 'Plank'];
+const MAX_RESULTS = 50;
+
+interface HomeProps {
+  exercises: Exercise[] | null;
+  error: string | null;
+  openExercise: Exercise | null;
+  onSelectMuscle: (id: MuscleGroupId | null) => void;
+  onOpenExercise: (ex: Exercise | null) => void;
+}
+
+function HomePanel({ exercises, error, openExercise, onSelectMuscle, onOpenExercise }: HomeProps) {
+  const [query, setQuery] = useState('');
+  const results = useMemo(() => searchExercises(exercises ?? [], query), [exercises, query]);
+  const searching = query.trim().length > 0;
+
+  return (
+    <aside className="panel">
+      <h1>Free Muscle</h1>
+      <p className="muted">Tap a muscle to see its exercises, or search for an exercise to see the muscles it works.</p>
+      <input
+        className="home-search"
+        type="search"
+        placeholder={exercises ? `Search ${exercises.length} exercises…` : 'Search exercises…'}
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          onOpenExercise(null);
+        }}
+        aria-label="Search exercises"
+      />
+      {error && <p className="error">{error}</p>}
+      {!exercises && !error && <p className="muted">Loading exercises…</p>}
+
+      {!searching && (
+        <div className="chips examples">
+          {EXAMPLE_SEARCHES.map((q) => (
+            <button key={q} className="chip" onClick={() => setQuery(q)}>{q}</button>
+          ))}
+        </div>
+      )}
+      {searching && exercises && (
+        <p className="muted result-count">
+          {results.length === 0
+            ? 'No exercises match.'
+            : results.length > MAX_RESULTS
+              ? `Showing ${MAX_RESULTS} of ${results.length}, keep typing to narrow down.`
+              : `${results.length} ${results.length === 1 ? 'exercise' : 'exercises'}`}
+        </p>
+      )}
+      <ExerciseList
+        exercises={results.slice(0, MAX_RESULTS)}
+        openExercise={openExercise}
+        onOpenExercise={onOpenExercise}
+        onSelectMuscle={onSelectMuscle}
+        showMuscles
+      />
+    </aside>
+  );
+}
+
+interface ListProps {
+  exercises: Exercise[];
+  openExercise: Exercise | null;
+  onOpenExercise: (ex: Exercise | null) => void;
+  onSelectMuscle: (id: MuscleGroupId) => void;
+  /** Name the main target muscles on each row (for lists not tied to one muscle). */
+  showMuscles?: boolean;
+}
+
+function ExerciseList({ exercises, openExercise, onOpenExercise, onSelectMuscle, showMuscles }: ListProps) {
+  return (
+    <ul className="exercise-list">
+      {exercises.map((e) => {
+        const open = openExercise?.id === e.id;
+        return (
+          <li key={e.id} className={open ? 'exercise open' : 'exercise'}>
+            <button className="exercise-row" onClick={() => onOpenExercise(open ? null : e)} aria-expanded={open}>
+              <span className="exercise-name">{e.name}</span>
+              {showMuscles && (
+                <span className="exercise-muscles">{e.primaryMuscles.map((m) => MUSCLE_GROUPS[m]?.name ?? m).join(', ')}</span>
+              )}
+              <span className="tags">
+                <span className="tag">{e.equipment ?? 'other'}</span>
+                {e.category && e.category !== 'strength' && <span className="tag">{e.category}</span>}
+                {e.level && <span className={`tag level-${e.level}`}>{e.level}</span>}
+              </span>
+            </button>
+            {open && <ExerciseDetail exercise={e} onSelectMuscle={onSelectMuscle} />}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

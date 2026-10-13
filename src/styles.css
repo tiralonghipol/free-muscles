@@ -73,6 +73,13 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .exercise-list { list-style: none; margin: 0; padding: 0; }
+.home-search {
+  width: 100%; margin: 6px 0 10px; background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px;
+}
+.examples { margin-bottom: 8px; }
+.result-count { font-size: 0.85rem; margin: 0 2px 4px; }
+.exercise-muscles { font-size: 0.8rem; color: var(--accent); }
 .hidden-note { font-size: 0.88rem; margin: 12px 2px; }
 .link-btn { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font-size: inherit; }
 .link-btn:hover { text-decoration: underline; }
@@ -178,7 +185,7 @@ button, input, select { font: inherit; color: inherit; }
     border-radius: 16px 16px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
     transition: height 0.25s ease;
   }
-  .app.has-selection .panel { height: 60dvh; }
+  .app.has-selection .panel, .panel:focus-within { height: 60dvh; }
 
   .tree {
     position: fixed; inset: 0 auto 0 0; z-index: 10; width: min(300px, 85vw);
