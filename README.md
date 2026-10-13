@@ -35,6 +35,8 @@ Vite uses relative paths (`base: './'`), so the same build works on the github.i
   Refresh it with `npm run fetch-exercises`. Exercise images load straight from that repo on GitHub.
 - **Muscle groups:** the 17 groups use the same names as the exercise DB (`chest`, `lats`, `lower back`, …), so no extra mapping is needed.
   The muscle → group map lives in `GROUP_RULES` in `scripts/build-anatomy.py`. Face, scalp, foot and rib-wall muscles are shown but not clickable.
+- **Exercise search:** with nothing selected, the panel searches every exercise by name (`searchExercises` in
+  `src/data/exercises.ts`; "pull-up" also finds "Pullups"). Opening a result lights up its muscles.
 - **Reverse lookup:** opening an exercise highlights every muscle it works on the model (orange = main target, pale yellow = also works).
 
 ## Rebuild the 3D model
