@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { MUSCLE_GROUPS, type MuscleGroupId } from '../data/muscles';
 import { shortLabel, type MuscleTarget, type TreeGroup } from '../data/anatomy';
 
@@ -11,9 +11,34 @@ interface Props {
   onClose: () => void;
 }
 
+// Desktop sidebar width (px): draggable, remembered per browser.
+const DEFAULT_WIDTH = 260;
+const MIN_WIDTH = 200;
+const maxWidth = () => Math.max(MIN_WIDTH, Math.min(560, Math.round(window.innerWidth * 0.45)));
+const WIDTH_KEY = 'free-muscle.treeWidth';
+const clampWidth = (w: number) => Math.min(maxWidth(), Math.max(MIN_WIDTH, Math.round(w)));
+
+function savedWidth() {
+  try {
+    const w = Number(localStorage.getItem(WIDTH_KEY));
+    return w ? clampWidth(w) : DEFAULT_WIDTH;
+  } catch {
+    return DEFAULT_WIDTH;
+  }
+}
+
+function saveWidth(w: number) {
+  try {
+    localStorage.setItem(WIDTH_KEY, String(w));
+  } catch {
+    // Private mode etc.: the width just isn't remembered.
+  }
+}
+
 export function MuscleTree({ tree, selected, open, onSelect, onHover, onClose }: Props) {
   const [expanded, setExpanded] = useState<Set<MuscleGroupId>>(new Set());
   const [query, setQuery] = useState('');
+  const [width, setWidth] = useState(savedWidth);
   const activeRow = useRef<HTMLButtonElement | null>(null);
 
   // Selecting from the body opens the matching branch and scrolls it into view.
@@ -42,7 +67,12 @@ export function MuscleTree({ tree, selected, open, onSelect, onHover, onClose }:
     });
 
   return (
-    <aside className={open ? 'tree open' : 'tree'} onPointerLeave={() => onHover(null)}>
+    <aside
+      className={open ? 'tree open' : 'tree'}
+      style={{ '--tree-width': `${width}px` } as CSSProperties}
+      onPointerLeave={() => onHover(null)}
+    >
+      <ResizeHandle width={width} onResize={setWidth} />
       <div className="tree-head">
         <h2>Muscles</h2>
         <button className="icon-btn tree-close" aria-label="Close muscle list" onClick={onClose}>✕</button>
@@ -109,5 +139,56 @@ export function MuscleTree({ tree, selected, open, onSelect, onHover, onClose }:
         })}
       </ul>
     </aside>
+  );
+}
+
+/** Drag (or arrow keys) to resize the sidebar; double-click to reset. */
+function ResizeHandle({ width, onResize }: { width: number; onResize: (w: number) => void }) {
+  const set = (w: number) => {
+    const next = clampWidth(w);
+    onResize(next);
+    saveWidth(next);
+  };
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const handle = e.currentTarget;
+    handle.setPointerCapture(e.pointerId);
+    const startX = e.clientX;
+    const startW = width;
+    document.body.classList.add('resizing');
+    const move = (ev: PointerEvent) => onResize(clampWidth(startW + ev.clientX - startX));
+    const up = (ev: PointerEvent) => {
+      set(startW + ev.clientX - startX);
+      document.body.classList.remove('resizing');
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', up);
+      handle.removeEventListener('pointercancel', up);
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up);
+    handle.addEventListener('pointercancel', up);
+  };
+
+  return (
+    <div
+      className="tree-resize"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize muscle list"
+      aria-valuenow={width}
+      aria-valuemin={MIN_WIDTH}
+      aria-valuemax={maxWidth()}
+      tabIndex={0}
+      title="Drag to resize · double-click to reset"
+      onPointerDown={onPointerDown}
+      onDoubleClick={() => set(DEFAULT_WIDTH)}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          set(width + (e.key === 'ArrowRight' ? 20 : -20));
+        }
+      }}
+    />
   );
 }
