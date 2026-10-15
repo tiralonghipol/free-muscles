@@ -10,15 +10,23 @@ export interface Exercise {
   primaryMuscles: MuscleGroupId[];
   secondaryMuscles: MuscleGroupId[];
   instructions: string[];
+  /** Full image URLs (resolved on load). */
   images: string[];
 }
 
-export const IMAGE_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+interface ExerciseFile {
+  /** The free-exercise-db commit the data was taken from (scripts/fetch-exercises.mjs). */
+  source: { repo: string; commit: string };
+  exercises: Exercise[];
+}
 
 export async function loadExercises(): Promise<Exercise[]> {
   const res = await fetch(`${import.meta.env.BASE_URL}exercises.json`);
   if (!res.ok) throw new Error(`Failed to load exercises (${res.status})`);
-  return res.json();
+  const { source, exercises }: ExerciseFile = await res.json();
+  // Photos come from jsDelivr's CDN pinned to the same commit as the data, so they always match.
+  const base = `https://cdn.jsdelivr.net/gh/${source.repo}@${source.commit}/exercises/`;
+  return exercises.map((e) => ({ ...e, images: e.images.map((img) => base + img) }));
 }
 
 /** Lowercase words, with hyphens dropped so "pull-up" matches "Pullups" and "Pull-Up". */

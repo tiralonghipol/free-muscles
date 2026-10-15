@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { IMAGE_BASE, type Exercise } from '../data/exercises';
+import type { Exercise } from '../data/exercises';
 
 // free-exercise-db ships a start and an end photo per exercise; alternating them reads like a GIF.
 const FRAME_MS = 1100;
@@ -19,7 +19,7 @@ function useFrames(count: number, playing: boolean) {
 }
 
 export function ExerciseMedia({ exercise }: { exercise: Exercise }) {
-  const images = exercise.images.slice(0, 2).map((img) => IMAGE_BASE + img);
+  const images = exercise.images.slice(0, 2);
   // Still by default; opening the lightbox starts the animation and closing it stops it again.
   const [playing, setPlaying] = useState(false);
   const [frame, setFrame] = useFrames(images.length, playing);
