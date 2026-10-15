@@ -5,9 +5,10 @@ import { Body, type Highlight } from './components/Body';
 import { MuscleTree } from './components/MuscleTree';
 import { HOME } from './components/useCameraFocus';
 import { ExercisePanel } from './components/ExercisePanel';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { loadExercises, type Exercise } from './data/exercises';
 import { MUSCLE_GROUPS } from './data/muscles';
-import type { MuscleTarget, TreeGroup } from './data/anatomy';
+import { GROUP_ORDER, type MuscleTarget, type TreeGroup } from './data/anatomy';
 import { readUrl, urlFor } from './urlState';
 
 const TARGET_Y = HOME.targetY;
@@ -23,6 +24,12 @@ export default function App() {
   const [hovered, setHovered] = useState<Required<MuscleTarget> | null>(null);
   const [treeHover, setTreeHover] = useState<MuscleTarget | null>(null);
   const [tree, setTree] = useState<TreeGroup[] | null>(null);
+  // Without the 3D model the tree can't list individual muscles; fall back to the groups.
+  const [modelFailed, setModelFailed] = useState(false);
+  const shownTree = useMemo(
+    () => tree ?? (modelFailed ? GROUP_ORDER.map((id) => ({ id, muscles: [] })) : null),
+    [tree, modelFailed],
+  );
   const [treeOpen, setTreeOpen] = useState(false);
   const [openExercise, setOpenExercise] = useState<Exercise | null>(null);
   const [exercises, setExercises] = useState<Exercise[] | null>(null);
@@ -99,7 +106,7 @@ export default function App() {
   return (
     <div className={selected ? 'app has-selection' : 'app'}>
       <MuscleTree
-        tree={tree}
+        tree={shownTree}
         selected={selected}
         open={treeOpen}
         onSelect={selectMuscle}
@@ -107,37 +114,43 @@ export default function App() {
         onClose={() => setTreeOpen(false)}
       />
       <div className="viewport">
-        <Canvas camera={{ position: VIEWS.front, fov: 35 }} dpr={[1, 2]}>
-          <color attach="background" args={['#14161c']} />
-          <ambientLight intensity={0.4} />
-          <directionalLight position={[2, 4, 3]} intensity={1.4} />
-          <directionalLight position={[-2, 2, -3]} intensity={0.6} />
-          <hemisphereLight args={['#ffffff', '#30343f', 0.6]} />
-          <Suspense fallback={null}>
-            <Body
-              selected={selected}
-              highlight={highlight}
-              externalHover={treeHover}
-              onSelect={selectMuscle}
-              onHover={setHovered}
-              onTree={setTree}
+        <ErrorBoundary fallback={(e) => <ViewportError error={e} />} onError={() => setModelFailed(true)}>
+          <Canvas camera={{ position: VIEWS.front, fov: 35 }} dpr={[1, 2]}>
+            <color attach="background" args={['#14161c']} />
+            <ambientLight intensity={0.4} />
+            <directionalLight position={[2, 4, 3]} intensity={1.4} />
+            <directionalLight position={[-2, 2, -3]} intensity={0.6} />
+            <hemisphereLight args={['#ffffff', '#30343f', 0.6]} />
+            <Suspense fallback={null}>
+              <Body
+                selected={selected}
+                highlight={highlight}
+                externalHover={treeHover}
+                onSelect={selectMuscle}
+                onHover={setHovered}
+                onTree={setTree}
+              />
+            </Suspense>
+            <ContactShadows position={[0, 0, 0]} opacity={0.5} scale={3} blur={2.5} />
+            <CameraControls
+              ref={initControls}
+              makeDefault
+              minDistance={0.4}
+              maxDistance={5}
+              minPolarAngle={0.2}
+              maxPolarAngle={Math.PI / 2 + 0.2}
             />
-          </Suspense>
-          <ContactShadows position={[0, 0, 0]} opacity={0.5} scale={3} blur={2.5} />
-          <CameraControls
-            ref={initControls}
-            makeDefault
-            minDistance={0.4}
-            maxDistance={5}
-            minPolarAngle={0.2}
-            maxPolarAngle={Math.PI / 2 + 0.2}
-          />
-        </Canvas>
+          </Canvas>
+        </ErrorBoundary>
 
         <div className="view-buttons">
           <button className="tree-open" onClick={() => setTreeOpen(true)}>☰ Muscles</button>
-          <button onClick={() => goTo('front')}>Front</button>
-          <button onClick={() => goTo('back')}>Back</button>
+          {!modelFailed && (
+            <>
+              <button onClick={() => goTo('front')}>Front</button>
+              <button onClick={() => goTo('back')}>Back</button>
+            </>
+          )}
         </div>
         {hovered && (
           <div className="hover-label">
@@ -159,6 +172,23 @@ export default function App() {
         onSelectMuscle={(id) => selectMuscle(id && { group: id })}
         onOpenExercise={setOpenExercise}
       />
+    </div>
+  );
+}
+
+// Shown instead of the 3D body when it can't be displayed; the muscle list and exercises still work.
+function ViewportError({ error }: { error: Error }) {
+  const noWebGl = /webgl|context/i.test(error.message);
+  return (
+    <div className="viewport-error" role="alert">
+      <h2>{noWebGl ? 'This device can\'t show the 3D body' : 'The 3D body failed to load'}</h2>
+      <p className="muted">
+        {noWebGl
+          ? 'Your browser or device has WebGL turned off or unsupported.'
+          : 'Check your connection and reload the page.'}{' '}
+        You can still pick muscles from the muscle list and browse every exercise.
+      </p>
+      {!noWebGl && <button className="icon-btn" onClick={() => window.location.reload()}>Reload</button>}
     </div>
   );
 }

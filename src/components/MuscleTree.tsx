@@ -62,14 +62,18 @@ export function MuscleTree({ tree, selected, open, onSelect, onHover, onClose }:
           return (
             <li key={g.id}>
               <div className={groupActive && !selected?.label ? 'tree-row group active' : 'tree-row group'}>
-                <button
-                  className="tree-toggle"
-                  aria-label={isOpen ? 'Collapse' : 'Expand'}
-                  aria-expanded={isOpen}
-                  onClick={() => toggle(g.id)}
-                >
-                  {isOpen ? '▾' : '▸'}
-                </button>
+                {g.muscles.length > 0 ? (
+                  <button
+                    className="tree-toggle"
+                    aria-label={isOpen ? 'Collapse' : 'Expand'}
+                    aria-expanded={isOpen}
+                    onClick={() => toggle(g.id)}
+                  >
+                    {isOpen ? '▾' : '▸'}
+                  </button>
+                ) : (
+                  <span className="tree-toggle" aria-hidden />
+                )}
                 <button
                   className="tree-name"
                   ref={groupActive && !selected?.label ? activeRow : undefined}
@@ -77,7 +81,7 @@ export function MuscleTree({ tree, selected, open, onSelect, onHover, onClose }:
                   onClick={() => onSelect({ group: g.id })}
                 >
                   {MUSCLE_GROUPS[g.id].name}
-                  <span className="count">{g.muscles.length}</span>
+                  {g.muscles.length > 0 && <span className="count">{g.muscles.length}</span>}
                 </button>
               </div>
               {isOpen && (

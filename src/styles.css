@@ -28,6 +28,13 @@ button, input, select { font: inherit; color: inherit; }
 }
 .view-buttons button:hover, .icon-btn:hover { border-color: var(--accent); }
 
+.viewport-error {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 24px; text-align: center;
+}
+.viewport-error h2 { margin: 0; font-size: 1.1rem; }
+.viewport-error p { max-width: 360px; margin: 0 0 8px; }
+
 .hover-label {
   position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.65); padding: 6px 12px; border-radius: 999px; pointer-events: none;
