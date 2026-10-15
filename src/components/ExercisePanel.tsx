@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { searchExercises, type Exercise } from '../data/exercises';
 import { ExerciseMedia } from './ExerciseMedia';
 import { MUSCLE_GROUPS, type MuscleGroupId } from '../data/muscles';
@@ -230,13 +230,35 @@ interface ListProps {
 }
 
 function ExerciseList({ exercises, openExercise, onOpenExercise, onSelectMuscle, showMuscles }: ListProps) {
+  const listRef = useRef<HTMLUListElement>(null);
+  // Where the clicked row was on screen, to keep it under the cursor after the list re-flows.
+  const anchor = useRef<{ id: string; top: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const a = anchor.current;
+    anchor.current = null;
+    const item = a && listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(a.id)}"]`);
+    const scroller = item?.closest<HTMLElement>('.panel');
+    if (!a || !item || !scroller) return;
+    // Opening one exercise collapses the previous one; if that was above, everything jumps up.
+    // Undo the jump so the clicked row stays where it was clicked...
+    scroller.scrollTop += item.getBoundingClientRect().top - a.top;
+    // ...then scroll just enough to bring its photo (or the details) into view.
+    (item.querySelector('.media') ?? item.querySelector('.exercise-detail'))?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [openExercise]);
+
+  const toggle = (e: Exercise, open: boolean, row: HTMLElement) => {
+    anchor.current = open ? null : { id: e.id, top: row.getBoundingClientRect().top };
+    onOpenExercise(open ? null : e);
+  };
+
   return (
-    <ul className="exercise-list">
+    <ul className="exercise-list" ref={listRef}>
       {exercises.map((e) => {
         const open = openExercise?.id === e.id;
         return (
-          <li key={e.id} className={open ? 'exercise open' : 'exercise'}>
-            <button className="exercise-row" onClick={() => onOpenExercise(open ? null : e)} aria-expanded={open}>
+          <li key={e.id} data-id={e.id} className={open ? 'exercise open' : 'exercise'}>
+            <button className="exercise-row" onClick={(ev) => toggle(e, open, ev.currentTarget)} aria-expanded={open}>
               <span className="exercise-name">{e.name}</span>
               {showMuscles && (
                 <span className="exercise-muscles">{e.primaryMuscles.map((m) => MUSCLE_GROUPS[m]?.name ?? m).join(', ')}</span>
