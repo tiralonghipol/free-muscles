@@ -25,7 +25,7 @@ export interface TreeGroup {
 }
 
 // Head-to-toe order for the tree. Group centroids overlap too much (e.g. middle back vs traps) to sort by height.
-const GROUP_ORDER: MuscleGroupId[] = [
+export const GROUP_ORDER: MuscleGroupId[] = [
   'neck', 'traps', 'shoulders', 'chest', 'biceps', 'triceps', 'forearms', 'lats', 'middle back',
   'abdominals', 'lower back', 'glutes', 'abductors', 'adductors', 'quadriceps', 'hamstrings', 'calves',
 ];
