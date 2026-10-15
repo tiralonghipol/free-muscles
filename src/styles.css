@@ -1,4 +1,6 @@
 :root {
+  /* Dark theme (default). The theme is set on <html data-theme> by index.html and src/theme.ts. */
+  color-scheme: dark;
   --bg: #14161c;
   --panel: #1c1f27;
   --panel-2: #252935;
@@ -6,12 +8,38 @@
   --muted: #9a9ca6;
   --accent: #ff9d45;
   --focus: #45b8e0;
-  --primary-hl: #ff8a2a;
   --secondary: #f3e3a6;
   --border: #2f3442;
+  --error: #ff7b7b;
+  --lvl-beginner: #8fd18f;
+  --lvl-intermediate: #f2d27a;
+  --lvl-expert: #ff8c7a;
+  --credit: rgba(255, 255, 255, 0.45);
+  --credit-hover: rgba(255, 255, 255, 0.8);
+  --shadow: rgba(0, 0, 0, 0.5);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--text);
   background: var(--bg);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #e9ecf1;
+  --panel: #ffffff;
+  --panel-2: #f0f2f6;
+  --text: #1d2129;
+  --muted: #5d6371;
+  --accent: #c8650c;
+  --focus: #1b86b4;
+  --secondary: #a07c00;
+  --border: #d7dbe3;
+  --error: #c62828;
+  --lvl-beginner: #2c7a3a;
+  --lvl-intermediate: #946e00;
+  --lvl-expert: #c0412b;
+  --credit: rgba(0, 0, 0, 0.45);
+  --credit-hover: rgba(0, 0, 0, 0.8);
+  --shadow: rgba(0, 0, 0, 0.18);
 }
 
 * { box-sizing: border-box; }
@@ -42,10 +70,10 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .credit {
-  position: absolute; top: 12px; right: 12px; font-size: 11px; color: rgba(255, 255, 255, 0.45);
+  position: absolute; top: 12px; right: 12px; font-size: 11px; color: var(--credit);
   text-decoration: none;
 }
-.credit:hover { color: rgba(255, 255, 255, 0.8); }
+.credit:hover { color: var(--credit-hover); }
 
 .panel {
   --pad: 20px;
@@ -64,7 +92,7 @@ button, input, select { font: inherit; color: inherit; }
 .anatomy { margin: 0; color: var(--accent); font-size: 0.9rem; }
 .anatomy.focus { color: var(--focus); }
 .muted { color: var(--muted); line-height: 1.45; }
-.error { color: #ff7b7b; }
+.error { color: var(--error); }
 
 .chips, .muscle-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
@@ -105,9 +133,9 @@ button, input, select { font: inherit; color: inherit; }
 .exercise-row:hover .exercise-name, .exercise.open .exercise-name { color: var(--accent); }
 .tags { display: flex; gap: 4px; }
 .tag { font-size: 0.75rem; color: var(--muted); background: var(--panel-2); padding: 2px 8px; border-radius: 999px; }
-.level-beginner { color: #8fd18f; }
-.level-intermediate { color: #f2d27a; }
-.level-expert { color: #ff8c7a; }
+.level-beginner { color: var(--lvl-beginner); }
+.level-intermediate { color: var(--lvl-intermediate); }
+.level-expert { color: var(--lvl-expert); }
 
 .exercise-detail { padding: 4px 2px 14px; }
 
@@ -158,8 +186,9 @@ button, input, select { font: inherit; color: inherit; }
 }
 .legend { display: flex; gap: 14px; font-size: 0.8rem; color: var(--muted); margin: 0 0 8px; }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
-.legend .dot-primary { background: var(--primary-hl); }
-.legend .dot-secondary { background: var(--secondary); }
+/* Same colours as the 3D highlight (Body.tsx), in both themes; outlined so pale yellow shows on white. */
+.legend .dot-primary { background: #ff8a2a; }
+.legend .dot-secondary { background: #f3e3a6; box-shadow: inset 0 0 0 1px var(--border); }
 .exercise-detail ol { padding-left: 20px; color: var(--muted); line-height: 1.45; font-size: 0.92rem; }
 
 /* Muscle tree (left sidebar) */
@@ -219,7 +248,7 @@ body.resizing .viewport { pointer-events: none; }
   .tree {
     position: fixed; inset: 0 auto 0 0; z-index: 10; width: min(300px, 85vw);
     transform: translateX(-100%); transition: transform 0.25s ease;
-    box-shadow: 0 0 24px rgba(0, 0, 0, 0.5); padding-top: calc(16px + env(safe-area-inset-top));
+    box-shadow: 0 0 24px var(--shadow); padding-top: calc(16px + env(safe-area-inset-top));
   }
   .tree.open { transform: none; }
   .tree-resize { display: none; }
