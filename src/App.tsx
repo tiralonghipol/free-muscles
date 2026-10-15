@@ -8,6 +8,7 @@ import { ExercisePanel } from './components/ExercisePanel';
 import { loadExercises, type Exercise } from './data/exercises';
 import { MUSCLE_GROUPS } from './data/muscles';
 import type { MuscleTarget, TreeGroup } from './data/anatomy';
+import { readUrl, urlFor } from './urlState';
 
 const TARGET_Y = HOME.targetY;
 type Vec3 = [number, number, number];
@@ -17,7 +18,8 @@ const VIEWS: Record<'front' | 'back', Vec3> = {
 };
 
 export default function App() {
-  const [selected, setSelected] = useState<MuscleTarget | null>(null);
+  const [initialUrl] = useState(readUrl);
+  const [selected, setSelected] = useState<MuscleTarget | null>(initialUrl.selected);
   const [hovered, setHovered] = useState<Required<MuscleTarget> | null>(null);
   const [treeHover, setTreeHover] = useState<MuscleTarget | null>(null);
   const [tree, setTree] = useState<TreeGroup[] | null>(null);
@@ -27,8 +29,45 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const controls = useRef<CameraControls | null>(null);
 
+  // An exercise named in the URL can only be opened once the list has loaded.
+  const pendingExercise = useRef(initialUrl.exerciseId);
+  const exercisesRef = useRef<Exercise[] | null>(null);
+
   useEffect(() => {
-    loadExercises().then(setExercises, (e: Error) => setError(e.message));
+    loadExercises().then((list) => {
+      exercisesRef.current = list;
+      setExercises(list);
+      const id = pendingExercise.current;
+      pendingExercise.current = null;
+      if (id) setOpenExercise(list.find((e) => e.id === id) ?? null);
+    }, (e: Error) => {
+      pendingExercise.current = null;
+      setError(e.message);
+    });
+  }, []);
+
+  // Mirror the selection into the URL; each change is a history entry, so Back steps back.
+  // The first sync only tidies the landing URL (e.g. an unknown ?m=), so it replaces instead.
+  const urlSynced = useRef(false);
+  useEffect(() => {
+    if (pendingExercise.current) return; // don't drop ?ex= before it has been restored
+    const url = urlFor({ selected, exerciseId: openExercise?.id ?? null });
+    if (url !== window.location.pathname + window.location.search + window.location.hash) {
+      window.history[urlSynced.current ? 'pushState' : 'replaceState'](null, '', url);
+    }
+    urlSynced.current = true;
+  }, [selected, openExercise]);
+
+  // Back / Forward: restore the state from the URL (which then already matches, so no push).
+  useEffect(() => {
+    const onPop = () => {
+      const { selected: s, exerciseId } = readUrl();
+      setSelected(s);
+      setOpenExercise(exerciseId ? exercisesRef.current?.find((e) => e.id === exerciseId) ?? null : null);
+      setTreeOpen(false);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
   // Stable callback ref so the initial view is applied once, not on every render.

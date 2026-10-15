@@ -117,7 +117,7 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
       {!exercises && !error && <p className="muted">Loading exercises…</p>}
       {exercises && visible.length === 0 && <p className="muted">No exercises match these filters.</p>}
 
-      <ExerciseList exercises={visible} openExercise={openExercise} onOpenExercise={onOpenExercise} onSelectMuscle={onSelectMuscle} />
+      <ExerciseList exercises={withOpen(visible, openExercise)} openExercise={openExercise} onOpenExercise={onOpenExercise} onSelectMuscle={onSelectMuscle} />
       {hiddenStretches > 0 && (
         <p className="muted hidden-note">
           {hiddenStretches} {hiddenStretches === 1 ? 'stretch' : 'stretches'} hidden ·{' '}
@@ -127,6 +127,9 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
     </aside>
   );
 }
+
+/** The open exercise always shows, e.g. when opened from a shared link but outside this list or its filters. */
+const withOpen = (list: Exercise[], open: Exercise | null) => (open && !list.includes(open) ? [open, ...list] : list);
 
 // Shown with nothing selected: search every exercise by name.
 const EXAMPLE_SEARCHES = ['Squat', 'Bench press', 'Deadlift', 'Pull-up', 'Push-up', 'Lunge', 'Plank'];
@@ -180,7 +183,7 @@ function HomePanel({ exercises, error, openExercise, onSelectMuscle, onOpenExerc
         </p>
       )}
       <ExerciseList
-        exercises={results.slice(0, MAX_RESULTS)}
+        exercises={withOpen(results.slice(0, MAX_RESULTS), openExercise)}
         openExercise={openExercise}
         onOpenExercise={onOpenExercise}
         onSelectMuscle={onSelectMuscle}
