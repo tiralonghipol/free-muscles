@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#14161c" />
+    <script>
+      // Apply the theme before first paint: saved choice, else the system setting (see src/theme.ts).
+      (function () {
+        var t;
+        try { t = localStorage.getItem('free-muscle.theme'); } catch (e) {}
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.dataset.theme = t;
+        document.querySelector('meta[name="theme-color"]').content = t === 'light' ? '#e9ecf1' : '#14161c';
+      })();
+    </script>
     <link rel="icon" href="data:," />
     <title>Free Muscle</title>
     <meta name="description" content="Interactive 3D muscle map: tap a muscle to see every exercise that trains it." />

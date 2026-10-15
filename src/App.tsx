@@ -10,6 +10,7 @@ import { loadExercises, type Exercise } from './data/exercises';
 import { MUSCLE_GROUPS } from './data/muscles';
 import { GROUP_ORDER, type MuscleTarget, type TreeGroup } from './data/anatomy';
 import { readUrl, urlFor } from './urlState';
+import { SCENE_COLORS, useTheme } from './theme';
 
 const TARGET_Y = HOME.targetY;
 type Vec3 = [number, number, number];
@@ -20,6 +21,7 @@ const VIEWS: Record<'front' | 'back', Vec3> = {
 
 export default function App() {
   const [initialUrl] = useState(readUrl);
+  const { theme, toggle: toggleTheme } = useTheme();
   const [selected, setSelected] = useState<MuscleTarget | null>(initialUrl.selected);
   const [hovered, setHovered] = useState<Required<MuscleTarget> | null>(null);
   const [treeHover, setTreeHover] = useState<MuscleTarget | null>(null);
@@ -116,11 +118,11 @@ export default function App() {
       <div className="viewport">
         <ErrorBoundary fallback={(e) => <ViewportError error={e} />} onError={() => setModelFailed(true)}>
           <Canvas camera={{ position: VIEWS.front, fov: 35 }} dpr={[1, 2]}>
-            <color attach="background" args={['#14161c']} />
+            <color attach="background" args={[SCENE_COLORS[theme].background]} />
             <ambientLight intensity={0.4} />
             <directionalLight position={[2, 4, 3]} intensity={1.4} />
             <directionalLight position={[-2, 2, -3]} intensity={0.6} />
-            <hemisphereLight args={['#ffffff', '#30343f', 0.6]} />
+            <hemisphereLight args={['#ffffff', SCENE_COLORS[theme].ground, 0.6]} />
             <Suspense fallback={null}>
               <Body
                 selected={selected}
@@ -145,6 +147,14 @@ export default function App() {
 
         <div className="view-buttons">
           <button className="tree-open" onClick={() => setTreeOpen(true)}>☰ Muscles</button>
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            title={theme === 'dark' ? 'Light theme' : 'Dark theme'}
+          >
+            {theme === 'dark' ? '☀' : '☾'}
+          </button>
           {!modelFailed && (
             <>
               <button onClick={() => goTo('front')}>Front</button>
