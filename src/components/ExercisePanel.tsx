@@ -155,7 +155,8 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
 }
 
 /** The open exercise always shows, e.g. when opened from a shared link but outside this list or its filters. */
-const withOpen = (list: Exercise[], open: Exercise | null) => (open && !list.includes(open) ? [open, ...list] : list);
+const withOpen = (list: Exercise[], open: Exercise | null) =>
+  open && !list.some((e) => e.id === open.id) ? [open, ...list] : list;
 
 // Shown with nothing selected: search every exercise by name.
 const EXAMPLE_SEARCHES = ['Squat', 'Bench press', 'Deadlift', 'Pull-up', 'Push-up', 'Lunge', 'Plank'];
