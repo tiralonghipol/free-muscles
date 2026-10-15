@@ -32,7 +32,8 @@ Vite uses relative paths (`base: './'`), so the same build works on the github.i
   Every mesh carries `userData` with `kind` (`muscle` / `other` / `bone`), `label` (e.g. "Long head of biceps brachii") and, for muscles, its exercise `group`.
   `src/components/Body.tsx` only reads those fields; the Draco decoder is self-hosted in `public/draco/`.
 - **Exercises:** 876 exercises from [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public domain), trimmed into `public/exercises.json`.
-  Refresh it with `npm run fetch-exercises`. Exercise images load straight from that repo on GitHub.
+  Refresh it with `npm run fetch-exercises` (optionally `-- <commit>`). The file records the upstream commit, and
+  exercise photos load from jsDelivr's CDN pinned to that same commit, so data and photos always match.
 - **Muscle groups:** the 17 groups use the same names as the exercise DB (`chest`, `lats`, `lower back`, …), so no extra mapping is needed.
   The muscle → group map lives in `GROUP_RULES` in `scripts/build-anatomy.py`. Face, scalp, foot and rib-wall muscles are shown but not clickable.
 - **Exercise search:** with nothing selected, the panel searches every exercise by name (`searchExercises` in
@@ -40,6 +41,8 @@ Vite uses relative paths (`base: './'`), so the same build works on the github.i
 - **X-ray for deep muscles:** when a single muscle is picked, whatever covers it from the current camera angle turns
   see-through (`src/components/useXray.ts`, re-checked whenever the camera settles). Clicks pass through the ghosted
   meshes.
+- **Shareable links:** the URL mirrors the selection, `?m=<group>&part=<muscle>&ex=<exercise id>`
+  (`src/urlState.ts`), so links reopen the same view and the browser's Back button steps back.
 - **Reverse lookup:** opening an exercise highlights every muscle it works on the model (orange = main target, pale yellow = also works).
 
 ## Rebuild the 3D model
