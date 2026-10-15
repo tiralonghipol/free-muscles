@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Exercise } from '../data/exercises';
 
@@ -24,6 +24,7 @@ export function ExerciseMedia({ exercise }: { exercise: Exercise }) {
   const [playing, setPlaying] = useState(false);
   const [frame, setFrame] = useFrames(images.length, playing);
   const [zoomed, setZoomed] = useState(false);
+  const stageRef = useRef<HTMLButtonElement>(null);
 
   const videoUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${exercise.name} exercise proper form`)}`;
 
@@ -40,7 +41,7 @@ export function ExerciseMedia({ exercise }: { exercise: Exercise }) {
 
   return (
     <div className="media">
-      <button className="media-stage" onClick={() => { setZoomed(true); setPlaying(!prefersReducedMotion()); }} aria-label="Enlarge pictures">
+      <button ref={stageRef} className="media-stage" onClick={() => { setZoomed(true); setPlaying(!prefersReducedMotion()); }} aria-label="Enlarge pictures">
         <Frames images={images} frame={frame} alt={exercise.name} />
         <span className="media-badge">{FRAME_NAMES[frame]}</span>
         <span className="media-zoom" aria-hidden>⤢</span>
@@ -66,7 +67,11 @@ export function ExerciseMedia({ exercise }: { exercise: Exercise }) {
           onTogglePlay={() => setPlaying((p) => !p)}
           onStep={step}
           onPick={(i) => { setPlaying(false); setFrame(i); }}
-          onClose={() => { setZoomed(false); setPlaying(false); }}
+          onClose={() => {
+            setZoomed(false);
+            setPlaying(false);
+            stageRef.current?.focus(); // back to where the lightbox was opened from
+          }}
         />,
         document.body,
       )}
@@ -109,8 +114,23 @@ interface LightboxProps {
 }
 
 function Lightbox({ title, images, frame, playing, onTogglePlay, onStep, onPick, onClose }: LightboxProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  // Move focus into the dialog when it opens.
+  useEffect(() => closeRef.current?.focus(), []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Keep Tab inside the dialog instead of wandering through the page behind it.
+      if (e.key === 'Tab' && dialogRef.current) {
+        const items = [...dialogRef.current.querySelectorAll<HTMLElement>('button')];
+        const i = items.indexOf(document.activeElement as HTMLElement);
+        const next = e.shiftKey ? (i <= 0 ? items.length - 1 : i - 1) : (i + 1) % items.length;
+        e.preventDefault();
+        items[next]?.focus();
+        return;
+      }
       if (e.key === 'Escape') onClose();
       else if (e.key === 'ArrowRight') onStep(1);
       else if (e.key === 'ArrowLeft') onStep(-1);
@@ -124,10 +144,10 @@ function Lightbox({ title, images, frame, playing, onTogglePlay, onStep, onPick,
   const [touchX, setTouchX] = useState<number | null>(null);
 
   return (
-    <div className="lightbox" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
+    <div ref={dialogRef} className="lightbox" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
       <div className="lightbox-head" onClick={(e) => e.stopPropagation()}>
         <span>{title}</span>
-        <button className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
+        <button ref={closeRef} className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
       </div>
       <div
         className="lightbox-stage"

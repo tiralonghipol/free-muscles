@@ -27,6 +27,22 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
   const [level, setLevel] = useState('');
   const [type, setType] = useState(TRAINING);
 
+  // A new muscle starts on its main exercises with an empty search; equipment, level and type
+  // are kept, as they're more like preferences. (Adjusting state during render, per React docs.)
+  const [shownMuscle, setShownMuscle] = useState(muscle);
+  if (muscle !== shownMuscle) {
+    setShownMuscle(muscle);
+    setRole('primary');
+    setQuery('');
+  }
+  const filtersActive = !!(query.trim() || equipment || level || type !== TRAINING);
+  const clearFilters = () => {
+    setQuery('');
+    setEquipment('');
+    setLevel('');
+    setType(TRAINING);
+  };
+
   const typeOptions = useMemo(
     () => [...new Set((exercises ?? []).map((e) => e.category).filter((c): c is string => !!c))].sort(),
     [exercises],
@@ -47,20 +63,25 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
     return out;
   }, [muscle, exercises]);
 
-  const visible = useMemo(() => {
+  // Search, equipment and level; the type filter is applied separately so the stretches it hides can be counted.
+  const matching = useMemo(() => {
     const q = query.trim().toLowerCase();
     return byRole[role].filter((e) =>
       (!q || e.name.toLowerCase().includes(q)) &&
       (!equipment || (e.equipment ?? 'other') === equipment) &&
-      (!level || e.level === level) &&
-      (type === TRAINING ? e.category !== STRETCHING : !type || e.category === type),
+      (!level || e.level === level),
     );
-  }, [byRole, role, query, equipment, level, type]);
+  }, [byRole, role, query, equipment, level]);
 
-  // Stretches the default type filter is hiding here, to offer them back.
+  const visible = useMemo(
+    () => matching.filter((e) => (type === TRAINING ? e.category !== STRETCHING : !type || e.category === type)),
+    [matching, type],
+  );
+
+  // Stretches the default type filter is hiding (that the other filters would show), to offer them back.
   const hiddenStretches = useMemo(
-    () => (type === TRAINING ? byRole[role].filter((e) => e.category === STRETCHING).length : 0),
-    [byRole, role, type],
+    () => (type === TRAINING ? matching.filter((e) => e.category === STRETCHING).length : 0),
+    [matching, type],
   );
 
   if (!muscle) {
@@ -115,7 +136,12 @@ export function ExercisePanel({ muscle, muscleLabel, exercises, error, openExerc
 
       {error && <p className="error">{error}</p>}
       {!exercises && !error && <p className="muted">Loading exercises…</p>}
-      {exercises && visible.length === 0 && <p className="muted">No exercises match these filters.</p>}
+      {exercises && visible.length === 0 && (
+        <p className="muted">
+          No exercises match these filters.
+          {filtersActive && <> <button className="link-btn" onClick={clearFilters}>Clear filters</button></>}
+        </p>
+      )}
 
       <ExerciseList exercises={withOpen(visible, openExercise)} openExercise={openExercise} onOpenExercise={onOpenExercise} onSelectMuscle={onSelectMuscle} />
       {hiddenStretches > 0 && (
